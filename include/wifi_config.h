@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
         WIFI_CONFIG_CONNECTED = 1,
         WIFI_CONFIG_DISCONNECTED = 2,
@@ -15,3 +19,7 @@ void wifi_config_set(const char *ssid, const char *password);
 void wifi_config_set_custom_html(char *html);
 
 esp_err_t safe_set_auto_connect(bool enable);
+
+#ifdef __cplusplus
+}
+#endif
