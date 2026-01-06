@@ -1,12 +1,12 @@
 <!-- part HTML_SETTINGS_HEADER -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>WiFi Configuration</title>
+  <title>Configuração Wi-Fi</title>
   <style>
     html,
     body {
@@ -22,6 +22,18 @@
       font-weight: 600;
       text-align: center;
       margin-bottom: 2rem;
+    }
+    .app-header {
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      text-align: center;
+      margin: 0 0 2rem 0;
+      color: inherit;
+      font-size: 1rem;
     }
     .container {
       max-width: 480px;
@@ -154,6 +166,27 @@
       content: "* ";
       color: red;
     }
+    .toggle-password {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: -1rem;
+      margin-bottom: 1.5rem;
+      user-select: none;
+    }
+    .toggle-password input {
+      width: auto;
+      margin: 0;
+    }
+    .toggle-password label {
+      display: inline;
+      margin: 0;
+      font-weight: 400;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
   </style>
 </head>
 <body>
@@ -161,31 +194,37 @@
     <!-- part HTML_SETTINGS_CUSTOM_HTML -->
     {{ custom_html|safe }}
     <!-- part HTML_SETTINGS_BODY -->
-    <h1>Choose a Wi-Fi Network</h1>
+    <div class="app-header">Smart Flow Hall</div>
+    <p class="subtitle">Configuração de Wi-Fi</p>
+    <h1>Escolha uma rede Wi-Fi</h1>
     <form action="/settings" method="get">
-      <input type="submit" id="refresh" value="⟲ Refresh" />
+      <input type="submit" id="refresh" value="⟲ Atualizar" />
     </form>
     <form action="/settings" method="post">
-      <div class="nonetworks" style="display: none;">No networks found</div>
+      <div class="nonetworks" style="display: none;">Nenhuma rede encontrada</div>
       <ul id="networks" class="networks">
           <!-- part HTML_NETWORK_ITEM -->
         {% for network in networks %}
         <li class="{{ network.secure | ternary('secure', 'unsecure') }}">{{ network.ssid }}</li>
         {% endfor %}
         <!-- part HTML_SETTINGS_FOOTER -->
-        <li class="other">Choose Another Network</li>
+        <li class="other">Escolher outra rede</li>
       </ul>
       <div class="field required ssid" style="display: none;">
         <label for="ssid">SSID:</label>
         <input type="text" id="ssid" name="ssid" />
       </div>
       <div class="field required password" style="display: none;">
-        <label for="password">Password:</label>
+        <label for="password">Senha:</label>
         <input type="password" id="password" name="password" />
       </div>
-      <input type="submit" id="join" value="Join" disabled />
+      <div class="toggle-password" style="display: none;">
+        <input type="checkbox" id="toggle_password" />
+        <label for="toggle_password">Mostrar senha</label>
+      </div>
+      <input type="submit" id="join" value="Conectar" disabled />
     </form>
-    <p style="text-align:center"><sub><sup>Copyright © 2025 | StudioPieters® | All rights reserved.</sub></sup></p>
+    <p class="footer"><small>© 2026 Smart Sensor Design</small></p>
   </div>
   <script>
     const networks_block = document.getElementById('networks');
@@ -193,6 +232,8 @@
     const ssid_field = document.getElementById('ssid');
     const password_block = document.querySelector('.field.password');
     const password_field = document.getElementById('password');
+    const toggle_password_block = document.querySelector('.toggle-password');
+    const toggle_password = document.getElementById('toggle_password');
     const join_button = document.getElementById('join');
     function enable(el) {
       el.disabled = false;
@@ -206,6 +247,11 @@
     function hide(el) {
       el.style.display = 'none';
     }
+    function resetPasswordVisibility() {
+      if (!toggle_password) return;
+      toggle_password.checked = false;
+      password_field.type = 'password';
+    }
     function selectNetwork(el) {
       document.querySelectorAll('ul.networks li').forEach(n => n.classList.remove('selected'));
       el.classList.add('selected');
@@ -216,8 +262,10 @@
         ssid_field.value = li.innerText;
         hide(ssid_block);
         hide(password_block);
+        hide(toggle_password_block);
         disable(password_field);
         password_field.value = '';
+        resetPasswordVisibility();
         enable(join_button);
       };
     });
@@ -228,6 +276,8 @@
         hide(ssid_block);
         enable(password_field);
         show(password_block);
+        show(toggle_password_block);
+        resetPasswordVisibility();
         disable(join_button);
         password_block.classList.add('required');
       };
@@ -239,6 +289,8 @@
         ssid_field.value = '';
         show(ssid_block);
         show(password_block);
+        show(toggle_password_block);
+        resetPasswordVisibility();
         enable(ssid_field);
         enable(password_field);
         disable(join_button);
@@ -250,7 +302,13 @@
       hide(networks_block);
       show(ssid_block);
       show(password_block);
+      show(toggle_password_block);
       password_block.classList.remove('required');
+    }
+    if (toggle_password) {
+      toggle_password.onchange = () => {
+        password_field.type = toggle_password.checked ? 'text' : 'password';
+      };
     }
     [ssid_field, password_field].forEach(input => {
       input.oninput = () => {
