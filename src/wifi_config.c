@@ -198,6 +198,7 @@ typedef enum {
         ENDPOINT_INDEX,
         ENDPOINT_SETTINGS,
         ENDPOINT_SETTINGS_UPDATE,
+        ENDPOINT_CONNECTING,
 } endpoint_t;
 
 
@@ -371,6 +372,21 @@ static void wifi_scan_task(void *arg)
 }
 
 #include "index.html.h"
+#include "connecting.html.h"
+
+static void wifi_config_server_on_connecting(client_t *client) {
+        static const char http_prologue[] =
+                "HTTP/1.1 200 \r\n"
+                "Content-Type: text/html; charset=utf-8\r\n"
+                "Cache-Control: no-store\r\n"
+                "Transfer-Encoding: chunked\r\n"
+                "Connection: close\r\n"
+                "\r\n";
+
+        client_send(client, http_prologue, sizeof(http_prologue)-1);
+        client_send_chunk(client, html_connecting);
+        client_send_chunk(client, "");
+}
 
 static void wifi_config_server_on_settings(client_t *client) {
         static const char http_prologue[] =
@@ -435,8 +451,8 @@ static void wifi_config_server_on_settings_update(client_t *client) {
                 return;
         }
 
-        static const char payload[] = "HTTP/1.1 204 \r\nContent-Type: text/html\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
-        client_send(client, payload, sizeof(payload)-1);
+        // Immediately redirect to a connection-in-progress page (no success/failure feedback available here).
+        client_send_redirect(client, 302, "/connecting");
 
         DEBUG("Setting wifi_ssid param = %s", ssid_param->value);
         DEBUG("Setting wifi_password param = %s", password_param->value);
@@ -462,6 +478,8 @@ static int wifi_config_server_on_url(http_parser *parser, const char *data, size
         if (parser->method == HTTP_GET) {
                 if (!strncmp(data, "/settings", length)) {
                         client->endpoint = ENDPOINT_SETTINGS;
+                } else if (!strncmp(data, "/connecting", length)) {
+                        client->endpoint = ENDPOINT_CONNECTING;
                 } else if (!strncmp(data, "/", length)) {
                         client->endpoint = ENDPOINT_INDEX;
                 }
@@ -509,6 +527,11 @@ static int wifi_config_server_on_message_complete(http_parser *parser) {
         case ENDPOINT_SETTINGS_UPDATE: {
                 DEBUG("POST /settings");
                 wifi_config_server_on_settings_update(client);
+                break;
+        }
+        case ENDPOINT_CONNECTING: {
+                DEBUG("GET /connecting");
+                wifi_config_server_on_connecting(client);
                 break;
         }
         case ENDPOINT_UNKNOWN: {

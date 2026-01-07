@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from collections import namedtuple
-from flask import Flask, render_template, render_template_string, request
+from flask import Flask, render_template, render_template_string, request, redirect
 import os
 import os.path
 import sys
@@ -76,12 +76,13 @@ def get_settings0():
 
 @app.route('/settings', methods=['POST'])
 def update_settings():
-    if request.form.get('password'):
-        return 'Connecting to "%s", password = "%s"' % (
-            request.form['ssid'],
-            request.form['password']
-        )
-    return 'Connecting to "%s", no password' % request.form['ssid']
+    # Mirror device behavior: accept the POST, then redirect to a connecting page.
+    return redirect('/connecting', code=302)
+
+
+@app.route('/connecting', methods=['GET'])
+def get_connecting():
+    return render_template('connecting.html')
 
 
 # Server entry point
